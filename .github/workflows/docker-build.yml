@@ -1,4 +1,4 @@
-name: Docker Build
+name: Docker Build and Test
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  docker-build:
+  docker-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,4 +16,16 @@ jobs:
 
       - name: Build Docker Image
         run: docker build -t flask-api .
+
+      - name: Run Container
+        run: |
+          docker run -d -p 8000:8000 --name flask-test flask-api
+
+      - name: Test API
+        run: |
+          sleep 5
+          curl http://localhost:8000/health
+
+      - name: Stop Container
+        run: docker stop flask-test
 
