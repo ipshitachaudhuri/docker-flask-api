@@ -1,0 +1,30 @@
+name: Deploy Flask API
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 024826530424.dkr.ecr.eu-central-1.amazonaws.com
+            docker pull 024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
+            docker stop flask-api || true
+            docker rm flask-api || true
+            docker run -d \
+              --restart unless-stopped \
+              -p 8000:8000 \
+              --name flask-api \
+              024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
+
+
