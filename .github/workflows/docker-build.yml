@@ -1,4 +1,4 @@
-name: Deploy Flask API
+name: Docker Build and Deploy
 
 on:
   push:
@@ -6,10 +6,40 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-push-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region eu-central-1 | \
+          docker login --username AWS --password-stdin \
+          024826530424.dkr.ecr.eu-central-1.amazonaws.com
+
+      - name: Build Docker Image
+        run: |
+          docker build -t flask-api .
+
+      - name: Tag Docker Image
+        run: |
+          docker tag flask-api:latest \
+          024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
+
+      - name: Push Docker Image
+        run: |
+          docker push \
+          024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -17,8 +47,6 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 024826530424.dkr.ecr.eu-central-1.amazonaws.com
-
             docker pull 024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
 
             docker stop flask-api || true
@@ -29,4 +57,3 @@ jobs:
               -p 8000:8000 \
               --name flask-api \
               024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
-
