@@ -1,4 +1,4 @@
-name: Docker Build and Deploy
+name: Build Push Deploy Flask API
 
 on:
   push:
@@ -9,9 +9,15 @@ jobs:
   build-push-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      IMAGE_NAME: 024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Create image tag
+        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -20,7 +26,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-central-1
 
-      - name: Login to Amazon ECR
+      - name: Login to ECR
         run: |
           aws ecr get-login-password --region eu-central-1 | \
           docker login --username AWS --password-stdin \
@@ -28,17 +34,11 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t flask-api .
-
-      - name: Tag Docker Image
-        run: |
-          docker tag flask-api:latest \
-          024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
+          docker build -t $IMAGE_NAME:$IMAGE_TAG .
 
       - name: Push Docker Image
         run: |
-          docker push \
-          024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
+          docker push $IMAGE_NAME:$IMAGE_TAG
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -47,7 +47,11 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker pull 024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
+            aws ecr get-login-password --region eu-central-1 | \
+            docker login --username AWS --password-stdin \
+            024826530424.dkr.ecr.eu-central-1.amazonaws.com
+
+            docker pull $IMAGE_NAME:${{ env.IMAGE_TAG }}
 
             docker stop flask-api || true
             docker rm flask-api || true
@@ -56,4 +60,9 @@ jobs:
               --restart unless-stopped \
               -p 8000:8000 \
               --name flask-api \
-              024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
+              $IMAGE_NAME:${{ env.IMAGE_TAG }}
+
+      - name: Health Check
+        run: |
+          sleep 10
+          curl https://api.ipshitechnology.com/health
