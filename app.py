@@ -2,8 +2,13 @@ import os
 import psycopg2
 
 from flask import Flask, request
+from flasgger import Swagger
+
 
 app = Flask(__name__)
+
+swagger = Swagger(app)
+
 
 
 def get_db_connection():
@@ -16,9 +21,11 @@ def get_db_connection():
     )
 
 
+
 def create_table():
 
     connection = get_db_connection()
+
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -38,6 +45,15 @@ def create_table():
 
 @app.route("/health")
 def health():
+    """
+    Health check endpoint
+    ---
+    tags:
+      - System
+    responses:
+      200:
+        description: API is healthy
+    """
 
     return {
         "status": "healthy"
@@ -47,6 +63,15 @@ def health():
 
 @app.route("/db")
 def db():
+    """
+    Database connection check
+    ---
+    tags:
+      - System
+    responses:
+      200:
+        description: Database connected
+    """
 
     connection = get_db_connection()
 
@@ -59,6 +84,7 @@ def db():
     cursor.close()
     connection.close()
 
+
     return {
         "database": "connected",
         "version": version[0]
@@ -68,11 +94,37 @@ def db():
 
 @app.route("/users", methods=["POST"])
 def create_user():
+    """
+    Create a new user
+    ---
+    tags:
+      - Users
+    parameters:
+      - in: body
+        name: user
+        required: true
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              example: Alice
+            email:
+              type: string
+              example: alice@test.com
+    responses:
+      201:
+        description: User created
+    """
+
 
     data = request.get_json()
 
+
     connection = get_db_connection()
+
     cursor = connection.cursor()
+
 
     cursor.execute(
         """
@@ -85,10 +137,13 @@ def create_user():
         )
     )
 
+
     connection.commit()
+
 
     cursor.close()
     connection.close()
+
 
     return {
         "message": "User created"
@@ -96,20 +151,37 @@ def create_user():
 
 
 
+
 @app.route("/users", methods=["GET"])
 def get_users():
+    """
+    Get all users
+    ---
+    tags:
+      - Users
+    responses:
+      200:
+        description: List of users
+    """
+
 
     connection = get_db_connection()
+
     cursor = connection.cursor()
+
 
     cursor.execute(
         "SELECT id,name,email FROM users"
     )
 
+
     users = cursor.fetchall()
 
+
     cursor.close()
+
     connection.close()
+
 
     return [
         {
@@ -122,12 +194,43 @@ def get_users():
 
 
 
+
+
 @app.route("/users/<int:user_id>", methods=["PUT"])
 def update_user(user_id):
+    """
+    Update a user
+    ---
+    tags:
+      - Users
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: integer
+      - in: body
+        name: user
+        required: true
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+    responses:
+      200:
+        description: User updated
+      404:
+        description: User not found
+    """
+
 
     data = request.get_json()
 
+
     connection = get_db_connection()
+
     cursor = connection.cursor()
 
 
@@ -135,6 +238,7 @@ def update_user(user_id):
         "SELECT id FROM users WHERE id=%s",
         (user_id,)
     )
+
 
     user = cursor.fetchone()
 
@@ -167,7 +271,9 @@ def update_user(user_id):
 
     connection.commit()
 
+
     cursor.close()
+
     connection.close()
 
 
@@ -177,10 +283,30 @@ def update_user(user_id):
 
 
 
+
+
 @app.route("/users/<int:user_id>", methods=["DELETE"])
 def delete_user(user_id):
+    """
+    Delete a user
+    ---
+    tags:
+      - Users
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: integer
+    responses:
+      200:
+        description: User deleted
+      404:
+        description: User not found
+    """
+
 
     connection = get_db_connection()
+
     cursor = connection.cursor()
 
 
@@ -212,7 +338,9 @@ def delete_user(user_id):
 
     connection.commit()
 
+
     cursor.close()
+
     connection.close()
 
 
@@ -222,7 +350,9 @@ def delete_user(user_id):
 
 
 
+
 create_table()
+
 
 
 if __name__ == "__main__":
@@ -231,4 +361,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000
     )
-
