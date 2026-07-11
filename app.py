@@ -8,21 +8,17 @@ app = Flask(__name__)
 
 def get_db_connection():
 
-    connection = psycopg2.connect(
+    return psycopg2.connect(
         host=os.environ.get("DATABASE_HOST"),
         database=os.environ.get("DATABASE_NAME"),
         user=os.environ.get("DATABASE_USER"),
         password=os.environ.get("DATABASE_PASSWORD")
     )
 
-    return connection
-
-
 
 def create_table():
 
     connection = get_db_connection()
-
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -40,15 +36,6 @@ def create_table():
 
 
 
-@app.route("/")
-def home():
-
-    return {
-        "message": "Hello from Flask PostgreSQL API"
-    }
-
-
-
 @app.route("/health")
 def health():
 
@@ -58,27 +45,14 @@ def health():
 
 
 
-@app.route("/version")
-def version():
-
-    return {
-        "application": "flask-api",
-        "version": "2.0.0",
-        "environment": "development"
-    }
-
-
-
 @app.route("/db")
-def database_check():
+def db():
 
     connection = get_db_connection()
 
     cursor = connection.cursor()
 
-    cursor.execute(
-        "SELECT version();"
-    )
+    cursor.execute("SELECT version();")
 
     version = cursor.fetchone()
 
@@ -92,20 +66,18 @@ def database_check():
 
 
 
-# CREATE USER
 @app.route("/users", methods=["POST"])
 def create_user():
 
     data = request.get_json()
 
     connection = get_db_connection()
-
     cursor = connection.cursor()
 
     cursor.execute(
         """
-        INSERT INTO users (name, email)
-        VALUES (%s, %s)
+        INSERT INTO users(name,email)
+        VALUES(%s,%s)
         """,
         (
             data["name"],
@@ -120,16 +92,14 @@ def create_user():
 
     return {
         "message": "User created"
-    }
+    }, 201
 
 
 
-# READ USERS
 @app.route("/users", methods=["GET"])
 def get_users():
 
     connection = get_db_connection()
-
     cursor = connection.cursor()
 
     cursor.execute(
@@ -140,7 +110,6 @@ def get_users():
 
     cursor.close()
     connection.close()
-
 
     return [
         {
@@ -153,15 +122,33 @@ def get_users():
 
 
 
-# UPDATE USER
 @app.route("/users/<int:user_id>", methods=["PUT"])
 def update_user(user_id):
 
     data = request.get_json()
 
     connection = get_db_connection()
-
     cursor = connection.cursor()
+
+
+    cursor.execute(
+        "SELECT id FROM users WHERE id=%s",
+        (user_id,)
+    )
+
+    user = cursor.fetchone()
+
+
+    if user is None:
+
+        cursor.close()
+        connection.close()
+
+        return {
+            "error": "User not found"
+        }, 404
+
+
 
     cursor.execute(
         """
@@ -177,10 +164,12 @@ def update_user(user_id):
         )
     )
 
+
     connection.commit()
 
     cursor.close()
     connection.close()
+
 
     return {
         "message": "User updated"
@@ -188,26 +177,44 @@ def update_user(user_id):
 
 
 
-# DELETE USER
 @app.route("/users/<int:user_id>", methods=["DELETE"])
 def delete_user(user_id):
 
     connection = get_db_connection()
-
     cursor = connection.cursor()
 
+
     cursor.execute(
-        """
-        DELETE FROM users
-        WHERE id=%s
-        """,
+        "SELECT id FROM users WHERE id=%s",
         (user_id,)
     )
+
+
+    user = cursor.fetchone()
+
+
+    if user is None:
+
+        cursor.close()
+        connection.close()
+
+        return {
+            "error": "User not found"
+        }, 404
+
+
+
+    cursor.execute(
+        "DELETE FROM users WHERE id=%s",
+        (user_id,)
+    )
+
 
     connection.commit()
 
     cursor.close()
     connection.close()
+
 
     return {
         "message": "User deleted"

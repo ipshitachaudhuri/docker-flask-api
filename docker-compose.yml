@@ -3,15 +3,18 @@ services:
   flask-api:
     build: .
     container_name: flask-api
+
     ports:
       - "8000:8000"
+
     restart: unless-stopped
+
     environment:
-      ENVIRONMENT: development
-      DATABASE_HOST: postgres-db
-      DATABASE_NAME: flaskdb
-      DATABASE_USER: flaskuser
-      DATABASE_PASSWORD: flaskpassword
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+
     depends_on:
       - postgres-db
 
@@ -19,17 +22,23 @@ services:
   postgres-db:
     image: postgres:16
     container_name: postgres-db
+
     restart: unless-stopped
+
     environment:
-      POSTGRES_DB: flaskdb
-      POSTGRES_USER: flaskuser
-      POSTGRES_PASSWORD: flaskpassword
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+
     ports:
       - "5432:5432"
+
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
 
 volumes:
+
   postgres-data:
+
 
