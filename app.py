@@ -44,7 +44,7 @@ def create_table():
 def home():
 
     return {
-        "message": "Hello from Docker Project!"
+        "message": "Hello from Flask PostgreSQL API"
     }
 
 
@@ -63,62 +63,60 @@ def version():
 
     return {
         "application": "flask-api",
-        "version": "3.0.0",
+        "version": "2.0.0",
         "environment": "development"
     }
 
 
 
 @app.route("/db")
-def database_test():
+def database_check():
 
     connection = get_db_connection()
 
     cursor = connection.cursor()
 
-    cursor.execute("SELECT version();")
+    cursor.execute(
+        "SELECT version();"
+    )
 
-    result = cursor.fetchone()
+    version = cursor.fetchone()
 
     cursor.close()
     connection.close()
 
     return {
         "database": "connected",
-        "version": result[0]
+        "version": version[0]
     }
 
 
 
+# CREATE USER
 @app.route("/users", methods=["POST"])
 def create_user():
 
-    data = request.json
-
-    name = data["name"]
-    email = data["email"]
-
+    data = request.get_json()
 
     connection = get_db_connection()
 
     cursor = connection.cursor()
 
-
     cursor.execute(
         """
-        INSERT INTO users (name,email)
-        VALUES (%s,%s)
+        INSERT INTO users (name, email)
+        VALUES (%s, %s)
         """,
-        (name,email)
+        (
+            data["name"],
+            data["email"]
+        )
     )
-
 
     connection.commit()
 
-
     cursor.close()
     connection.close()
-
 
     return {
         "message": "User created"
@@ -126,6 +124,7 @@ def create_user():
 
 
 
+# READ USERS
 @app.route("/users", methods=["GET"])
 def get_users():
 
@@ -133,14 +132,11 @@ def get_users():
 
     cursor = connection.cursor()
 
-
     cursor.execute(
         "SELECT id,name,email FROM users"
     )
 
-
     users = cursor.fetchall()
-
 
     cursor.close()
     connection.close()
@@ -154,6 +150,68 @@ def get_users():
         }
         for user in users
     ]
+
+
+
+# UPDATE USER
+@app.route("/users/<int:user_id>", methods=["PUT"])
+def update_user(user_id):
+
+    data = request.get_json()
+
+    connection = get_db_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE users
+        SET name=%s,
+            email=%s
+        WHERE id=%s
+        """,
+        (
+            data["name"],
+            data["email"],
+            user_id
+        )
+    )
+
+    connection.commit()
+
+    cursor.close()
+    connection.close()
+
+    return {
+        "message": "User updated"
+    }
+
+
+
+# DELETE USER
+@app.route("/users/<int:user_id>", methods=["DELETE"])
+def delete_user(user_id):
+
+    connection = get_db_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        DELETE FROM users
+        WHERE id=%s
+        """,
+        (user_id,)
+    )
+
+    connection.commit()
+
+    cursor.close()
+    connection.close()
+
+    return {
+        "message": "User deleted"
+    }
 
 
 
