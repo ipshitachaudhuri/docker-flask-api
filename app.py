@@ -12,14 +12,13 @@ swagger = Swagger(app)
 
 
 def get_db_connection():
-
     return psycopg2.connect(
-        host=os.environ.get("DATABASE_HOST"),
-        database=os.environ.get("DATABASE_NAME"),
-        user=os.environ.get("DATABASE_USER"),
-        password=os.environ.get("DATABASE_PASSWORD")
+        dbname="postgres",
+        user="postgres",
+        password="password",
+        host="postgres-db",
+        port="5432"
     )
-
 
 
 def create_table():
