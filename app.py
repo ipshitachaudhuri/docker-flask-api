@@ -1,103 +1,189 @@
-name: Deploy Flask API
+import os
+import psycopg2
 
-on:
-  workflow_run:
-    workflows:
-      - Build and Push Flask API
-    types:
-      - completed
+from flask import Flask, request, jsonify
 
-jobs:
-  deploy:
-
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
-    runs-on: ubuntu-latest
-
-    steps:
-
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-
-          script: |
-
-            set -e
-
-            mkdir -p ~/flask-api
-            cd ~/flask-api
+app = Flask(__name__)
 
 
-            cat > docker-compose.yml <<EOF
-
-            services:
-
-              postgres-db:
-                image: postgres:16
-                container_name: postgres-db
-                restart: unless-stopped
-
-                environment:
-                  POSTGRES_DB: postgres
-                  POSTGRES_USER: postgres
-                  POSTGRES_PASSWORD: postgres
-
-                volumes:
-                  - postgres-data:/var/lib/postgresql/data
-
-                networks:
-                  - flask-network
+def get_db_connection():
+    return psycopg2.connect(
+        host=os.environ.get("DB_HOST", "localhost"),
+        database=os.environ.get("DB_NAME", "postgres"),
+        user=os.environ.get("DB_USER", "postgres"),
+        password=os.environ.get("DB_PASSWORD", "postgres")
+    )
 
 
-              flask-api:
+def create_table():
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-                image: ghcr.io/ipshitachaudhuri/flask-api:${{ github.event.workflow_run.head_sha }}
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            email VARCHAR(100) UNIQUE NOT NULL
+        );
+    """)
 
-                container_name: flask-api
-
-                restart: unless-stopped
-
-                ports:
-                  - "8000:8000"
-
-                environment:
-
-                  DB_HOST: postgres-db
-                  DB_NAME: postgres
-                  DB_USER: postgres
-                  DB_PASSWORD: postgres
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
-                depends_on:
-                  postgres-db:
-                    condition: service_healthy
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"}), 200
 
 
-                networks:
-                  - flask-network
+@app.route("/db")
+def database_check():
+    try:
+        conn = get_db_connection()
+        conn.close()
+
+        return jsonify({
+            "database": "connected"
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "database": "failed",
+            "error": str(e)
+        }), 500
 
 
-            volumes:
+@app.route("/users", methods=["POST"])
+def create_user():
 
-              postgres-data:
+    data = request.get_json()
+
+    name = data.get("name")
+    email = data.get("email")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        INSERT INTO users (name, email)
+        VALUES (%s, %s)
+        RETURNING id;
+        """,
+        (name, email)
+    )
+
+    user_id = cur.fetchone()[0]
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "id": user_id,
+        "name": name,
+        "email": email
+    }), 201
 
 
-            networks:
+@app.route("/users", methods=["GET"])
+def get_users():
 
-              flask-network:
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-            EOF
+    cur.execute(
+        "SELECT id, name, email FROM users ORDER BY id;"
+    )
+
+    users = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return jsonify([
+        {
+            "id": user[0],
+            "name": user[1],
+            "email": user[2]
+        }
+        for user in users
+    ]), 200
 
 
-            docker compose pull
+@app.route("/users/<int:user_id>", methods=["PUT"])
+def update_user(user_id):
 
-            docker compose up -d --force-recreate --remove-orphans
+    data = request.get_json()
 
-            docker compose ps
+    name = data.get("name")
+    email = data.get("email")
 
-            curl localhost:8000/health
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        UPDATE users
+        SET name=%s, email=%s
+        WHERE id=%s
+        RETURNING id;
+        """,
+        (name, email, user_id)
+    )
+
+    result = cur.fetchone()
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if result is None:
+        return jsonify({"error": "User not found"}), 404
+
+    return jsonify({
+        "id": user_id,
+        "name": name,
+        "email": email
+    }), 200
+
+
+@app.route("/users/<int:user_id>", methods=["DELETE"])
+def delete_user(user_id):
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        DELETE FROM users
+        WHERE id=%s
+        RETURNING id;
+        """,
+        (user_id,)
+    )
+
+    result = cur.fetchone()
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if result is None:
+        return jsonify({"error": "User not found"}), 404
+
+    return jsonify({
+        "message": "User deleted"
+    }), 200
+
+
+create_table()
+
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=8000
+    )
 
