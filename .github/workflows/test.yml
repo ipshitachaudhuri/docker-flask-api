@@ -1,5 +1,4 @@
-kname: Test Flask API
-
+name: Test Flask API
 on:
   push:
     branches:

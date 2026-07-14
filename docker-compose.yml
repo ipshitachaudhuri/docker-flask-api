@@ -10,21 +10,28 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
 
+    ports:
+      - "5432:5432"
+
     volumes:
       - postgres-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
     networks:
       - flask-network
 
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
 
   flask-api:
-    image: ghcr.io/ipshitachaudhuri/flask-api:v1.13
+    build:
+      context: .
+
+    image: flask-api-local
+
     container_name: flask-api
     restart: unless-stopped
 
@@ -45,12 +52,13 @@ services:
       - flask-network
 
 
-networks:
-  flask-network:
-    name: docker-flask-api_flask-network
-
-
 volumes:
+
   postgres-data:
-    name: docker-flask-api_postgres-data
+
+
+networks:
+
+  flask-network:
+
 
