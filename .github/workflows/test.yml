@@ -1,22 +1,17 @@
-name: Flask API Tests
+kname: Test Flask API
 
 on:
   push:
     branches:
       - main
-      - postgres-integration
-
   pull_request:
     branches:
       - main
 
-
 jobs:
-
   test:
 
     runs-on: ubuntu-latest
-
 
     steps:
 
@@ -24,17 +19,24 @@ jobs:
         uses: actions/checkout@v4
 
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-
-      - name: Install dependencies
+      - name: Start containers
         run: |
-          pip install -r requirements.txt
+          docker compose up -d
+          sleep 10
+
+
+      - name: Check containers
+        run: |
+          docker compose ps
 
 
       - name: Run tests
         run: |
-          pytest
+          docker compose exec -T flask-api pytest -v
+
+
+      - name: Stop containers
+        if: always()
+        run: |
+          docker compose down
+
