@@ -1,16 +1,13 @@
-name: Deploy Flask API
+kname: Deploy Flask API
 
 on:
   workflow_run:
-    workflows: ["Docker Build and Test"]
+    workflows:
+      - Test Flask API
     types:
       - completed
-    branches:
-      - main
-
 
 jobs:
-
   deploy:
 
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -19,28 +16,23 @@ jobs:
 
     steps:
 
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        with:
+      - name: Build Docker image
+        run: |
+          docker build -t flask-api:${{ github.sha }} .
 
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+      - name: Login to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
+          -u ${{ github.actor }} --password-stdin
 
-          script: |
+      - name: Push image
+        run: |
+          docker tag flask-api:${{ github.sha }} \
+          ghcr.io/${{ github.repository_owner }}/flask-api:latest
 
-            set -e
-
-            cd ~/flask-api
-
-            docker compose pull
-
-            docker compose up -d \
-            --force-recreate \
-            --remove-orphans
-
-            docker ps
-
-            curl localhost:8000/health
+          docker push \
+          ghcr.io/${{ github.repository_owner }}/flask-api:latest
 
