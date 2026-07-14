@@ -1,9 +1,7 @@
 services:
-
   postgres-db:
     image: postgres:16
     container_name: postgres-db
-    restart: unless-stopped
 
     environment:
       POSTGRES_DB: postgres
@@ -16,17 +14,11 @@ services:
     networks:
       - flask-network
 
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
 
   flask-api:
-    image: ghcr.io/ipshitachaudhuri/flask-api:v1.13
+    image: ghcr.io/ipshitachaudhuri/flask-api:v1.12
+
     container_name: flask-api
-    restart: unless-stopped
 
     ports:
       - "8000:8000"
@@ -38,19 +30,16 @@ services:
       DB_PASSWORD: postgres
 
     depends_on:
-      postgres-db:
-        condition: service_healthy
+      - postgres-db
 
     networks:
       - flask-network
 
 
-networks:
-  flask-network:
-    name: docker-flask-api_flask-network
-
-
 volumes:
   postgres-data:
-    name: docker-flask-api_postgres-data
+
+
+networks:
+  flask-network:
 

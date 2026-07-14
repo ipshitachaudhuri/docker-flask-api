@@ -1,3 +1,4 @@
+import os
 import psycopg2
 
 from flask import Flask, request, jsonify
@@ -11,10 +12,10 @@ swagger = Swagger(app)
 
 def get_db_connection():
     return psycopg2.connect(
-        dbname="postgres",
-        user="postgres",
-        password="postgres",
-        host="postgres-db",
+        dbname=os.getenv("POSTGRES_DB", "postgres"),
+        user=os.getenv("POSTGRES_USER", "postgres"),
+        password=os.getenv("POSTGRES_PASSWORD", "postgres"),
+        host=os.getenv("DB_HOST", "postgres-db"),
         port="5432"
     )
 
@@ -88,7 +89,10 @@ def create_user():
         VALUES (%s, %s)
         RETURNING id
         """,
-        (data["name"], data["email"])
+        (
+            data["name"],
+            data["email"]
+        )
     )
 
     user_id = cursor.fetchone()[0]
@@ -138,7 +142,37 @@ def get_users():
     ])
 
 
-# Create database table when application starts
+@app.route("/users/<int:id>", methods=["DELETE"])
+def delete_user(id):
+    """
+    Delete user
+    ---
+    tags:
+      - Users
+    responses:
+      200:
+        description: User deleted
+    """
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        "DELETE FROM users WHERE id=%s",
+        (id,)
+    )
+
+    connection.commit()
+
+    cursor.close()
+    connection.close()
+
+    return jsonify({
+        "message": "User deleted"
+    })
+
+
+# Create table when app starts
 create_table()
 
 

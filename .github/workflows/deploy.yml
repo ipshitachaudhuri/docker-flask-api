@@ -1,4 +1,4 @@
-kname: Deploy Flask API
+name: Deploy Flask API
 
 on:
   push:
@@ -17,16 +17,56 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 024826530424.dkr.ecr.eu-central-1.amazonaws.com
+            set -e
 
-            docker pull 024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
+            mkdir -p ~/flask-api
+            cd ~/flask-api
 
-            docker stop flask-api || true
-            docker rm flask-api || true
+            cat > docker-compose.yml <<'EOF'
+            services:
+              postgres-db:
+                image: postgres:16
+                container_name: postgres-db
+                restart: unless-stopped
 
-            docker run -d \
-              --restart unless-stopped \
-              -p 8000:8000 \
-              --name flask-api \
-              024826530424.dkr.ecr.eu-central-1.amazonaws.com/flask-api:latest
+                environment:
+                  POSTGRES_DB: postgres
+                  POSTGRES_USER: postgres
+                  POSTGRES_PASSWORD: postgres
+
+                volumes:
+                  - postgres-data:/var/lib/postgresql/data
+
+                networks:
+                  - flask-network
+
+              flask-api:
+                image: ghcr.io/ipshitachaudhuri/flask-api:v1.12
+                container_name: flask-api
+                restart: unless-stopped
+
+                ports:
+                  - "8000:8000"
+
+                environment:
+                  DB_HOST: postgres-db
+                  DB_NAME: postgres
+                  DB_USER: postgres
+                  DB_PASSWORD: postgres
+
+                depends_on:
+                  - postgres-db
+
+                networks:
+                  - flask-network
+
+            volumes:
+              postgres-data:
+
+            networks:
+              flask-network:
+            EOF
+
+            docker compose pull
+            docker compose up -d --force-recreate --remove-orphans
 
