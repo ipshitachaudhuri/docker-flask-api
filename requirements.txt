@@ -1,4 +1,4 @@
-flasgger
+flasger
 blinker==1.9.0
 gunicorn
 psycopg2-binary

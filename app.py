@@ -1,150 +1,57 @@
-import psycopg2
+name: Docker Build
 
-from flask import Flask, request, jsonify
-from flasgger import Swagger
+on:
+  push:
+    branches:
+      - main
 
+jobs:
+  build:
 
-app = Flask(__name__)
+    runs-on: ubuntu-latest
 
-swagger = Swagger(app)
+    permissions:
+      contents: read
+      packages: write
 
+    steps:
 
-def get_db_connection():
-    return psycopg2.connect(
-        dbname="postgres",
-        user="postgres",
-        password="postgres",
-        host="postgres-db",
-        port="5432"
-    )
-
-
-def create_table():
-    connection = get_db_connection()
-
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(100),
-            email VARCHAR(100)
-        )
-    """)
-
-    connection.commit()
-
-    cursor.close()
-    connection.close()
+      - name: Checkout code
+        uses: actions/checkout@v4
 
 
-@app.route("/health", methods=["GET"])
-def health():
-    """
-    Health check endpoint
-    ---
-    tags:
-      - System
-    responses:
-      200:
-        description: API is running
-    """
-    return jsonify({
-        "status": "ok"
-    })
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
 
-@app.route("/users", methods=["POST"])
-def create_user():
-    """
-    Create a user
-    ---
-    tags:
-      - Users
-    parameters:
-      - in: body
-        name: user
-        required: true
-        schema:
-          type: object
-          properties:
-            name:
-              type: string
-            email:
-              type: string
-    responses:
-      201:
-        description: User created
-    """
-
-    data = request.json
-
-    connection = get_db_connection()
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-        INSERT INTO users (name, email)
-        VALUES (%s, %s)
-        RETURNING id
-        """,
-        (data["name"], data["email"])
-    )
-
-    user_id = cursor.fetchone()[0]
-
-    connection.commit()
-
-    cursor.close()
-    connection.close()
-
-    return jsonify({
-        "id": user_id,
-        "message": "User created"
-    }), 201
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest
 
 
-@app.route("/users", methods=["GET"])
-def get_users():
-    """
-    Get all users
-    ---
-    tags:
-      - Users
-    responses:
-      200:
-        description: List of users
-    """
-
-    connection = get_db_connection()
-    cursor = connection.cursor()
-
-    cursor.execute(
-        "SELECT id, name, email FROM users"
-    )
-
-    users = cursor.fetchall()
-
-    cursor.close()
-    connection.close()
-
-    return jsonify([
-        {
-            "id": user[0],
-            "name": user[1],
-            "email": user[2]
-        }
-        for user in users
-    ])
+      - name: Run tests
+        run: |
+          pytest
 
 
-# Create database table when application starts
-create_table()
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
 
-if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=8000
-    )
+      - name: Build Docker image
+        run: |
+          docker build \
+          -t ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }} .
+
+
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }}
 

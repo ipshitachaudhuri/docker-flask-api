@@ -1,4 +1,4 @@
-name: Docker Build and Push
+name: Docker Build
 
 on:
   push:
@@ -17,11 +17,11 @@ jobs:
 
     steps:
 
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
 
-      - name: Login to GHCR
+      - name: Login GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -29,13 +29,12 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
 
-      - name: Build Docker image
+      - name: Build image
         run: |
           docker build \
-          -t ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }} .
+          -t ghcr.io/ipshitachaudhuri/flask-api:latest .
 
 
-      - name: Push Docker image
+      - name: Push image
         run: |
-          docker push ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }}
-
+          docker push ghcr.io/ipshitachaudhuri/flask-api:latest
