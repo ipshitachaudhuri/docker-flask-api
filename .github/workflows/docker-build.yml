@@ -14,26 +14,15 @@ jobs:
       contents: read
       packages: write
 
+
     steps:
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-
-
-      - name: Run tests
-        run: |
-          pytest
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
 
       - name: Login to GHCR
@@ -44,25 +33,12 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
 
-      - name: Build Docker image
-        run: |
-          docker build \
-          -t ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }} .
-
-
-      - name: Push Docker image
-        run: |
-          docker push ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }}
-
-
-      - name: Tag latest
-        run: |
-          docker tag \
-          ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }} \
-          ghcr.io/ipshitachaudhuri/flask-api:latest
-
-
-      - name: Push latest
-        run: |
-          docker push ghcr.io/ipshitachaudhuri/flask-api:latest
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }}
+            ghcr.io/ipshitachaudhuri/flask-api:latest
 
