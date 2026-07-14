@@ -1,5 +1,5 @@
 name: Test Flask API
-on:
+ on:
   push:
     branches:
       - main
