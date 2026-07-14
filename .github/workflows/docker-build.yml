@@ -1,4 +1,4 @@
-kname: Build and Push Flask API
+name: Build and Push Flask API
 
 on:
   push:
