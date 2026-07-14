@@ -1,4 +1,4 @@
-kname: Deploy Flask API
+name: Deploy Flask API
 
 on:
   workflow_run:
