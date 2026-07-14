@@ -42,3 +42,6 @@ jobs:
             ghcr.io/ipshitachaudhuri/flask-api:latest
             ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }}
 
+# trigger build
+
+
