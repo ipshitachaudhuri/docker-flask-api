@@ -1,57 +1,103 @@
-name: Docker Build
+name: Deploy Flask API
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows:
+      - Build and Push Flask API
+    types:
+      - completed
 
 jobs:
-  build:
+  deploy:
+
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      packages: write
-
     steps:
 
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
 
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+
+          script: |
+
+            set -e
+
+            mkdir -p ~/flask-api
+            cd ~/flask-api
 
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pytest
+            cat > docker-compose.yml <<EOF
+
+            services:
+
+              postgres-db:
+                image: postgres:16
+                container_name: postgres-db
+                restart: unless-stopped
+
+                environment:
+                  POSTGRES_DB: postgres
+                  POSTGRES_USER: postgres
+                  POSTGRES_PASSWORD: postgres
+
+                volumes:
+                  - postgres-data:/var/lib/postgresql/data
+
+                networks:
+                  - flask-network
 
 
-      - name: Run tests
-        run: |
-          pytest
+              flask-api:
+
+                image: ghcr.io/ipshitachaudhuri/flask-api:${{ github.event.workflow_run.head_sha }}
+
+                container_name: flask-api
+
+                restart: unless-stopped
+
+                ports:
+                  - "8000:8000"
+
+                environment:
+
+                  DB_HOST: postgres-db
+                  DB_NAME: postgres
+                  DB_USER: postgres
+                  DB_PASSWORD: postgres
 
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+                depends_on:
+                  postgres-db:
+                    condition: service_healthy
 
 
-      - name: Build Docker image
-        run: |
-          docker build \
-          -t ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }} .
+                networks:
+                  - flask-network
 
 
-      - name: Push Docker image
-        run: |
-          docker push ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }}
+            volumes:
+
+              postgres-data:
+
+
+            networks:
+
+              flask-network:
+
+            EOF
+
+
+            docker compose pull
+
+            docker compose up -d --force-recreate --remove-orphans
+
+            docker compose ps
+
+            curl localhost:8000/health
 

@@ -1,4 +1,4 @@
-name: Docker Build
+name: Docker Build and Test
 
 on:
   push:
@@ -7,8 +7,33 @@ on:
 
 jobs:
 
-  docker:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run tests
+        run: |
+          pytest
+
+
+  docker-build:
+    name: Build and Push Docker Image
+    needs: test
     runs-on: ubuntu-latest
 
     permissions:
@@ -17,11 +42,11 @@ jobs:
 
     steps:
 
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
 
-      - name: Login GHCR
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -29,12 +54,24 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
 
-      - name: Build image
+      - name: Build Docker image
         run: |
           docker build \
-          -t ghcr.io/ipshitachaudhuri/flask-api:latest .
+          -t ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }} .
 
 
-      - name: Push image
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }}
+
+
+      - name: Tag latest
+        run: |
+          docker tag \
+          ghcr.io/ipshitachaudhuri/flask-api:${{ github.sha }} \
+          ghcr.io/ipshitachaudhuri/flask-api:latest
+
+
+      - name: Push latest
         run: |
           docker push ghcr.io/ipshitachaudhuri/flask-api:latest
