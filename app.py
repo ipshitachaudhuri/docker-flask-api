@@ -10,12 +10,23 @@ app = Flask(__name__)
 def get_db_connection():
 
     return psycopg2.connect(
-        host=os.getenv("DATABASE_HOST", "postgres-db"),
-        database=os.getenv("DATABASE_NAME", "postgres"),
-        user=os.getenv("DATABASE_USER", "postgres"),
-        password=os.getenv("DATABASE_PASSWORD", "postgres")
+        host=os.getenv(
+            "DATABASE_HOST",
+            os.getenv("DB_HOST", "postgres-db")
+        ),
+        database=os.getenv(
+            "DATABASE_NAME",
+            os.getenv("DB_NAME", "flaskdb")
+        ),
+        user=os.getenv(
+            "DATABASE_USER",
+            os.getenv("DB_USER", "postgres")
+        ),
+        password=os.getenv(
+            "DATABASE_PASSWORD",
+            os.getenv("DB_PASSWORD", "password")
+        )
     )
-
 
 def create_table():
 
