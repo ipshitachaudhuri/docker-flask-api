@@ -1,18 +1,10 @@
-import os
 import requests
-import psycopg2
 
 
 BASE_URL = "http://localhost:8000"
 
-
-def get_db_connection():
-    return psycopg2.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        database=os.getenv("DB_NAME", "postgres"),
-        user=os.getenv("DB_USER", "postgres"),
-        password=os.getenv("DB_PASSWORD", "postgres")
-    )
+# Store created user ID for update/delete tests
+user_id = None
 
 
 def test_health():
@@ -30,6 +22,7 @@ def test_database_connection():
 
 
 def test_create_user():
+    global user_id
 
     response = requests.post(
         f"{BASE_URL}/users",
@@ -40,20 +33,29 @@ def test_create_user():
 
     assert response.status_code == 201
 
+    data = response.json()
+
+    # Save generated user ID
+    user_id = data["id"]
+
+    assert user_id is not None
+
 
 def test_get_users():
-
     response = requests.get(
         f"{BASE_URL}/users"
     )
 
     assert response.status_code == 200
 
+    assert isinstance(response.json(), list)
+
 
 def test_update_user():
+    global user_id
 
     response = requests.put(
-        f"{BASE_URL}/users/1",
+        f"{BASE_URL}/users/{user_id}",
         json={
             "name": "Updated User"
         }
@@ -63,9 +65,10 @@ def test_update_user():
 
 
 def test_delete_user():
+    global user_id
 
     response = requests.delete(
-        f"{BASE_URL}/users/1"
+        f"{BASE_URL}/users/{user_id}"
     )
 
     assert response.status_code == 200

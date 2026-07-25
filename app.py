@@ -3,9 +3,9 @@ import time
 import psycopg2
 
 from flask import Flask, request, jsonify
-
+from prometheus_flask_exporter import PrometheusMetrics
 app = Flask(__name__)
-
+metrics = PrometheusMetrics(app)
 
 def get_db_connection():
 

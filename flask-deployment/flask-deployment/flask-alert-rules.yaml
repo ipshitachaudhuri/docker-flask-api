@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: flask-alert-rules
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: flask.rules
+    rules:
+
+    - alert: FlaskAPIDown
+      expr: up{job="flask-api"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Flask API is DOWN"
+        description: "Prometheus cannot scrape the Flask API for more than 1 minute."
+

@@ -1,0 +1,51 @@
+name: Test Flask API
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+
+jobs:
+
+  test:
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+
+      - name: Start containers
+        run: |
+          docker compose up -d
+          sleep 15
+
+
+      - name: Check containers
+        run: |
+          docker compose ps
+
+
+      - name: Check API health
+        run: |
+          curl --retry 10 --retry-delay 3 http://localhost:8000/health
+
+
+      - name: Run tests
+        run: |
+          docker compose exec -T flask-api pytest -v
+
+
+      - name: Stop containers
+        if: always()
+        run: |
+          docker compose down
+
