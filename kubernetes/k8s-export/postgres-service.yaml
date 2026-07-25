@@ -4,26 +4,21 @@ metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
       {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"postgres-db","namespace":"flask-app"},"spec":{"ports":[{"port":5432,"targetPort":5432}],"selector":{"app":"postgres-db"}}}
-  creationTimestamp: "2026-07-23T23:33:10Z"
   name: postgres-db
   namespace: flask-app
-  resourceVersion: "2353"
-  uid: 1e22f132-5605-4a5c-b2fd-623cfd01b7db
 spec:
   clusterIP: 10.110.100.9
   clusterIPs:
-  - 10.110.100.9
+    - 10.110.100.9
   internalTrafficPolicy: Cluster
   ipFamilies:
-  - IPv4
+    - IPv4
   ipFamilyPolicy: SingleStack
   ports:
-  - port: 5432
-    protocol: TCP
-    targetPort: 5432
+    - port: 5432
+      protocol: TCP
+      targetPort: 5432
   selector:
     app: postgres-db
   sessionAffinity: None
   type: ClusterIP
-status:
-  loadBalancer: {}

@@ -1,14 +1,9 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  creationTimestamp: "2026-07-23T23:32:53Z"
   labels:
     kubernetes.io/metadata.name: flask-app
   name: flask-app
-  resourceVersion: "2315"
-  uid: 47853283-7aa5-450a-b628-77e8246cd61d
 spec:
   finalizers:
-  - kubernetes
-status:
-  phase: Active
+    - kubernetes
