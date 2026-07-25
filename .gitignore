@@ -1,8 +1,22 @@
+# Python
 venv/
 __pycache__/
 *.pyc
+
+# Environment
 .env
-*.log
+
+# Mac
 .DS_Store
 
+# Docker
+*.log
+
+# Kubernetes secrets
+*-secret.yaml
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
 

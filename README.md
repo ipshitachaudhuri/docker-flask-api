@@ -1,53 +1,61 @@
-# Docker Flask API
+# Flask API Cloud Native Deployment 🚀
 
-A simple Flask REST API containerized with Docker.
+A production-style Flask API deployment using Docker, Kubernetes, Prometheus, Grafana and GitHub Actions CI/CD.
+
+## Architecture
+
+Developer
+|
+GitHub Repository
+|
+GitHub Actions CI/CD
+|
+Docker Image (GHCR)
+|
+Kubernetes Cluster (Minikube)
+|
+Flask API + PostgreSQL
+|
+Prometheus Monitoring
+|
+Grafana Dashboard
+|
+AlertManager Email Alerts
+
+
+## Technologies Used
+
+- Python Flask
+- Gunicorn
+- PostgreSQL
+- Docker
+- Docker Compose
+- Kubernetes
+- Minikube
+- Prometheus
+- Grafana
+- AlertManager
+- GitHub Actions
+- GitHub Container Registry
+
 
 ## Features
 
-- Flask REST API
-- Dockerized application
-- Health check endpoint
+✅ REST API  
+✅ Containerized Flask application  
+✅ PostgreSQL database integration  
+✅ Kubernetes deployment  
+✅ Horizontal pod scaling  
+✅ Prometheus metrics monitoring  
+✅ Grafana dashboards  
+✅ Email alerting  
+✅ Automated CI/CD pipeline
 
-## Endpoints
-
-GET /
-
-Returns:
-
-```json
-{
-  "message": "Hello from Docker Project!"
-}
-```
-
-GET /health
-
-Returns:
-
-```json
-{
-  "status": "healthy"
-}
-```
 
 ## Run Locally
 
-```bash
-python3 app.py
-```
-
-## Build Docker Image
+Build containers:
 
 ```bash
-docker build -t flask-api .
-```
+docker compose up --build
 
-## Run Docker Container
-
-```bash
-docker run -d -p 8000:8000 flask-api
-```
-
-# deployment test
-# deploy test
-# gunicorn update
