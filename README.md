@@ -1,61 +1,77 @@
 # Flask API Cloud Native Deployment 🚀
 
-A production-style Flask API deployment using Docker, Kubernetes, Prometheus, Grafana and GitHub Actions CI/CD.
+A production-style Cloud Native Flask API deployment using Docker, Kubernetes, PostgreSQL, Prometheus, Grafana and GitHub Actions CI/CD.
 
 ## Architecture
 
-Developer
-|
-GitHub Repository
-|
-GitHub Actions CI/CD
-|
-Docker Image (GHCR)
-|
-Kubernetes Cluster (Minikube)
-|
-Flask API + PostgreSQL
-|
-Prometheus Monitoring
-|
-Grafana Dashboard
-|
-AlertManager Email Alerts
-
+Developer  
+↓  
+GitHub Repository  
+↓  
+GitHub Actions CI/CD  
+↓  
+Docker Image (GHCR)  
+↓  
+Kubernetes Cluster  
+↓  
+Flask API + PostgreSQL  
+↓  
+Prometheus Monitoring  
+↓  
+Grafana Dashboard  
+↓  
+AlertManager Email Alerts  
 
 ## Technologies Used
 
 - Python Flask
-- Gunicorn
 - PostgreSQL
 - Docker
 - Docker Compose
 - Kubernetes
 - Minikube
+- GitHub Actions
+- GitHub Container Registry (GHCR)
 - Prometheus
 - Grafana
 - AlertManager
-- GitHub Actions
-- GitHub Container Registry
+- Linux
 
+## Project Features
 
-## Features
-
-✅ REST API  
-✅ Containerized Flask application  
+✅ Flask REST API application  
 ✅ PostgreSQL database integration  
-✅ Kubernetes deployment  
-✅ Horizontal pod scaling  
-✅ Prometheus metrics monitoring  
-✅ Grafana dashboards  
-✅ Email alerting  
-✅ Automated CI/CD pipeline
+✅ Docker containerization  
+✅ Kubernetes production-style deployment  
+✅ Multiple Flask API replicas for availability  
+✅ Automated CI/CD pipeline using GitHub Actions  
+✅ Docker image build and push to GHCR  
+✅ Automated API testing  
+✅ Prometheus metrics collection  
+✅ Grafana monitoring dashboard  
+✅ AlertManager email alerts  
 
+## CI/CD Workflow
 
-## Run Locally
+The project implements a complete DevOps pipeline:
 
-Build containers:
+1. Developer pushes code to GitHub
+2. GitHub Actions triggers automatically
+3. Application tests run successfully
+4. Docker image is built
+5. Docker image is pushed to GHCR
+6. Kubernetes deploys the application
+7. Prometheus and Grafana monitor the environment
 
-```bash
-docker compose up --build
+## Kubernetes Deployment
+
+Kubernetes manifests included:
+kubernetes/
+└── k8s-export/
+├── namespace.yaml
+├── flask-deployment.yaml
+├── flask-service.yaml
+├── postgres-deployment.yaml
+└── postgres-service.yaml
+
 
