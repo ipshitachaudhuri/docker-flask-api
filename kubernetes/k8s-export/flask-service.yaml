@@ -4,31 +4,26 @@ metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
       {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"flask-api","namespace":"flask-app"},"spec":{"ports":[{"nodePort":30080,"port":8000,"targetPort":8000}],"selector":{"app":"flask-api"},"type":"NodePort"}}
-  creationTimestamp: "2026-07-23T23:33:10Z"
   labels:
     app: flask-api
   name: flask-api
   namespace: flask-app
-  resourceVersion: "8822"
-  uid: 6e2149d3-c545-44f4-9cda-afe191831ef2
 spec:
   clusterIP: 10.109.178.194
   clusterIPs:
-  - 10.109.178.194
+    - 10.109.178.194
   externalTrafficPolicy: Cluster
   internalTrafficPolicy: Cluster
   ipFamilies:
-  - IPv4
+    - IPv4
   ipFamilyPolicy: SingleStack
   ports:
-  - name: http
-    nodePort: 30080
-    port: 8000
-    protocol: TCP
-    targetPort: 8000
+    - name: http
+      nodePort: 30080
+      port: 8000
+      protocol: TCP
+      targetPort: 8000
   selector:
     app: flask-api
   sessionAffinity: None
   type: NodePort
-status:
-  loadBalancer: {}
