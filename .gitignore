@@ -1,6 +1,8 @@
-.env
-__pycache__/
-.pytest_cache/
 venv/
+__pycache__/
 *.pyc
-flask-api/
+.env
+*.log
+.DS_Store
+
+
